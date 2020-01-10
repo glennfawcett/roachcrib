@@ -92,4 +92,28 @@ EXPLAIN ANALYZE SELECT city, count(*) FROM rides;
 CREATE DATABASE testmovr1;
 RESTORE movr1.* FROM 'gs://geolabs/backup1' WITH into_db ='testmovr1';
 
+-- Show Cluster Settings
+select variable,value from [show cluster setting all];
+select variable,value from [show cluster setting all] where variable like '%range%';
+
+-- Duplicate Indexes per region
+--
+CREATE INDEX idx_central ON postal_codes (id)
+    STORING (code);
+
+CREATE INDEX idx_east ON postal_codes (id)
+    STORING (code);
+
+ALTER INDEX postal_codes@idx_central
+    CONFIGURE ZONE USING
+      num_replicas = 3,
+      constraints = '{"+region=us-central":1}',
+      lease_preferences = '[[+region=us-central]]';
+
+ALTER INDEX postal_codes@idx_east
+    CONFIGURE ZONE USING
+      num_replicas = 3,
+      constraints = '{"+region=us-east":1}',
+      lease_preferences = '[[+region=us-east]]'
+
 ```
