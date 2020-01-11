@@ -116,4 +116,16 @@ ALTER INDEX postal_codes@idx_east
       constraints = '{"+region=us-east":1}',
       lease_preferences = '[[+region=us-east]]'
 
+-- Create Indexes that STORE values that are not part of the index or primary key
+--   This is useful for WIDE tables.  It is a "consolidated view"  of a table fragment
+--
+CREATE INDEX idx_wide_storing ON big_measures(city, measure_id) storing (myval1, myval2, myval3);
+
+
+--  TIME travel with Queries
+--
+SELECT id, fname, lname  
+FROM customer AS OF SYSTEM TIME INTERVAL '-10m' 
+WHERE id = 42;
+
 ```
