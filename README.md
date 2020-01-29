@@ -233,6 +233,7 @@ select variable,value from [show cluster setting all] where variable like '%rang
 -- Disable Telemetry Diagnostics
 --
 SET CLUSTER SETTING diagnostics.reporting.enabled = false;
+SET CLUSTER SETTING diagnostics.reporting.send_crash_reports = false;
 
 -- Create Indexes that STORE values that are not part of the index or primary key
 --   This is useful for WIDE tables.  It is a "consolidated view"  of a table fragment
