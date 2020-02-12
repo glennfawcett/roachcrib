@@ -179,7 +179,7 @@ select myjsoncol::JSONB->>'customer_id' from myjson_table;
 -- Filter based on JSON values
 --
 select * from myjson_table where myjsoncol::JSONB->>'customer_id' ='429908572';
-select * from myjson_table where myflat::JSONB @> '{"customer_id": "429908572"}';
+select * from myjson_table where myjsoncol::JSONB @> '{"customer_id": "429908572"}';
 
 
 -- Index JSON column to improve JSON queries
@@ -245,4 +245,10 @@ CREATE INDEX idx_wide_storing ON big_measures(city, measure_id) storing (myval1,
 SELECT id, fname, lname  
 FROM customer AS OF SYSTEM TIME INTERVAL '-10m' 
 WHERE id = 42;
+
+-- Config for single node unit testing, NOT for production
+--
+ALTER RANGE default CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 120;
+ALTER DATABASE system CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 120;
+SET CLUSTER SETTING jobs.retention_time = '180s'
 ```
