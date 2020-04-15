@@ -118,6 +118,27 @@ BEGIN;
 COMMIT;
 ```
 
+## Database Level Configuration 
+```
+root@localhost:26257/kv> show zone configuration for database mydatabase;
+     target     |              raw_config_sql
++---------------+------------------------------------------+
+  RANGE default | ALTER RANGE default CONFIGURE ZONE USING
+                |     range_min_bytes = 16777216,
+                |     range_max_bytes = 67108864,
+                |     gc.ttlseconds = 90000,
+                |     num_replicas = 3,
+                |     constraints = '[]',
+                |     lease_preferences = '[]'
+
+ALTER DATABASE mydatabase CONFIGURE ZONE USING
+  range_min_bytes = 0, 
+  range_max_bytes = 90000, 
+  gc.ttlseconds = 89999, 
+  num_replicas = 5,
+  constraints = '[-region=west]';
+```
+
 ## EXPLAIN, ANALYZE, VECTORIZE
 ```
 -- Explain Plan
