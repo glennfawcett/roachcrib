@@ -113,7 +113,7 @@ create table myjson_stored (
 ```
 
 ## CANCEL runaway Queries
-First you must find the currently running queries.
+Our docs, have a great description on how to [manage](https://www.cockroachlabs.com/docs/stable/manage-long-running-queries.html) long running queries.  Regardless, you must first identify the query to be killed.
 
 ```
 -- Show all Currently running queries
@@ -137,6 +137,58 @@ Once you find the culprit, simply supply the query_id to the cancel command maki
 SQL> CANCEL QUERY '16066ce888ed70f40000000000000004';
 
 CANCEL QUERIES 1
+```
+
+## Primary Key != Distribution Key
+CockroachDB creates ranges of data to distrubte data across the cluster.  These ranges are all based on the Primary Key.  First off, the primary key doesn't deteriming the distribution of data, the range size does.  Active ranges will be split and re-distributed based on load so as to best spread the activity.  This is all done for you so you don't have to worry about picking the proper distirbution key.  With CockroachDB, *Primary Key != Distibution Key*.
+
+If you don't pick a primary key, CockroachDB will assign values. See the following example:
+
+```
+root@localhost:26257/kv> create table foo(id int);
+CREATE TABLE
+```
+Notice that their is an extra *rowid* column embedded in the actual table.
+```
+root@localhost:26257/kv> show create table foo;
+  table_name |         create_statement
++------------+----------------------------------+
+  foo        | CREATE TABLE foo (
+             |     id INT8 NULL,
+             |     FAMILY "primary" (id, rowid)
+             | )
+(1 row)
+```
+
+This *rowid* column does not have to be considered for SQL operations.
+```
+root@localhost:26257/kv> insert into foo values (1),(2),(3);
+INSERT 3
+
+Time: 10.217799ms
+
+root@localhost:26257/kv> select * from foo;
+  id
++----+
+   1
+   2
+   3
+(3 rows)
+
+Time: 792.589µs
+```
+CockroachDB does however allow the user to query the *rowid* values.
+```
+
+root@localhost:26257/kv> select id, rowid from foo;
+  id |       rowid
++----+--------------------+
+   1 | 547249987223158785
+   2 | 547249987223224321
+   3 | 547249987223257089
+(3 rows)
+
+Time: 807.845µs
 ```
 
 ## MISC Tidbits
