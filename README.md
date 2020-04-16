@@ -116,6 +116,8 @@ create table myjson_stored (
 First you must find the currently running queries.
 
 ```
+-- Show all Currently running queries
+--
 SQL> SHOW QUERIES;
 
               query_id             | node_id | user_name |              start               |                           query                            | client_address  | application_name | distributed |   phase
@@ -123,6 +125,11 @@ SQL> SHOW QUERIES;
   16066ceaa78da3240000000000000001 |       1 | root      | 2020-04-16 22:21:13.783805+00:00 | SHOW CLUSTER QUERIES                                       | 127.0.0.1:43064 | $ cockroach sql  |    false    | executing
   16066ce888ed70f40000000000000004 |       4 | root      | 2020-04-16 22:21:04.680043+00:00 | SELECT count(*) FROM order_line AS a CROSS JOIN order_line | 127.0.0.1:33746 | $ cockroach sql  |    true     | executing
 (2 rows)
+
+-- Show all queries running longer than 10 minutes running queries
+--
+SELECT * FROM [SHOW CLUSTER QUERIES]
+      WHERE start < (now() - INTERVAL '10 minutes');
 ```
 Once you find the culprit, simply supply the query_id to the cancel command making sure to quote the string:
 ```
