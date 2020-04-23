@@ -56,6 +56,30 @@ SET session vectorize='off';
 
 ```
 
+## Tracing 
+```
+root@:26257/tpcc> \set auto_trace on,kv
+root@:26257/tpcc> select * from item limit 2;
+  i_id | i_im_id |          i_name          | i_price | i_data
++------+---------+--------------------------+---------+--------+
+     1 |    1122 | 9cdLXe0YhgLRrwsmd68P2bEl |   50.85 | Mask
+     2 |    3335 | 1fcW8RsaCXoEzmssaF9m9cd  |    5.40 | Mask
+(2 rows)
+
+Time: 1.453325ms
+
+             timestamp             |       age       |                                                 message                                                 |                tag                | location |    operation     | span
++----------------------------------+-----------------+---------------------------------------------------------------------------------------------------------+-----------------------------------+----------+------------------+------+
+  2020-04-20 16:55:30.23844+00:00  | 00:00:00.000291 | querying next range at /Table/62/1                                                                      | [n1,client=[::1]:32906,user=root] |          | exec stmt        |    4
+  2020-04-20 16:55:30.23893+00:00  | 00:00:00.00078  | Scan /Table/62/{1-2}                                                                                    | [n3]                              |          | table reader     |   10
+  2020-04-20 16:55:30.238971+00:00 | 00:00:00.000822 | querying next range at /Table/62/1                                                                      | [n3,txn=b962ed40]                 |          | dist sender send |   12
+  2020-04-20 16:55:30.238993+00:00 | 00:00:00.000844 | r93: sending batch 1 Scan to (n3,s3):3                                                                  | [n3,txn=b962ed40]                 |          | dist sender send |   12
+  2020-04-20 16:55:30.239151+00:00 | 00:00:00.001002 | fetched: /item/primary/1/i_im_id/i_name/i_price/i_data -> /1122/'9cdLXe0YhgLRrwsmd68P2bEl'/50.85/'Mask' | [n3]                              |          | table reader     |   10
+  2020-04-20 16:55:30.239169+00:00 | 00:00:00.001019 | fetched: /item/primary/2/i_im_id/i_name/i_price/i_data -> /3335/'1fcW8RsaCXoEzmssaF9m9cd'/5.40/'Mask'   | [n3]                              |          | table reader     |   10
+  2020-04-20 16:55:30.239522+00:00 | 00:00:00.001372 | rows affected: 2                                                                                        | [n1,client=[::1]:32906,user=root] |          | exec stmt        |    4
+(7 rows)
+```
+
 ## JSON Tips
 
 [JSON functions](https://www.cockroachlabs.com/docs/v19.2/functions-and-operators.html#jsonb-functions) are documented in details in our [doucmentation](https://www.cockroachlabs.com/docs/v19.2/functions-and-operators.html#jsonb-functions).  Please provide feedback via [github](https://github.com/cockroachdb/docs).
@@ -243,3 +267,62 @@ ALTER RANGE default CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 120;
 ALTER DATABASE system CONFIGURE ZONE USING num_replicas = 1, gc.ttlseconds = 120;
 SET CLUSTER SETTING jobs.retention_time = '180s'
 ```
+
+## Workload Edge Binary
+There are a few workloads included in the Cockroach binary:
+
+```
+$ cockroach workload init
+Usage:
+  cockroach workload init [flags]
+  cockroach workload init [command]
+
+Available Commands:
+  bank        [experimental] Bank models a set of accounts with currency balances
+  intro       [experimental] Intro contains a single table with a hidden message
+  kv          [experimental] KV reads and writes to keys spread randomly across the cluster.
+  movr        [experimental] MovR is a fictional vehicle sharing company
+  startrek    [experimental] Star Trek models episodes and quotes from the tv show
+  tpcc        [experimental] TPC-C simulates a transaction processing workload using a rich schema of multiple tables
+  ycsb        [experimental] YCSB is the Yahoo! Cloud Serving Benchmark
+```
+
+However, there are more in the shared github repository.  The latest Edge binary for the full compliment of workloads can be retrieved using:
+
+```
+wget https://edge-binaries.cockroachdb.com/cockroach/workload.LATEST
+chmod 755 workload.LATEST
+cp -i workload.LATEST /usr/local/bin/workload  
+chmod u+x /usr/local/bin/workload
+```
+
+This binary includes the following workloads:
+```
+$ workload init
+Usage:
+  workload init [flags]
+  workload init [command]
+
+Available Commands:
+  bank                   Bank models a set of accounts with currency balances
+  bulkingest             bulkingest testdata is designed to produce a skewed distribution of KVs when ingested (in initial import or during later indexing)
+  indexes                Indexes writes to a table with a variable number of secondary indexes
+  interleavedpartitioned Tests the performance of tables that are both interleaved and partitioned
+  intro                  Intro contains a single table with a hidden message
+  json                   JSON reads and writes to keys spread (by default, uniformly at random) across the cluster
+  kv                     KV reads and writes to keys spread randomly across the cluster.
+  ledger                 Ledger simulates an accounting system using double-entry bookkeeping
+  movr                   MovR is a fictional ride sharing company
+  querybench             QueryBench runs queries from the specified file. The queries are run sequentially in each concurrent worker.
+  querylog               Querylog is a tool that produces a workload based on the provided query log.
+  queue                  A simple queue-like application load: inserts into a table in sequence (ordered by primary key), followed by the deletion of inserted rows starting from the beginning of the sequence.
+  rand                   random writes to table
+  roachmart              Roachmart models a geo-distributed online storefront with users and orders
+  sqlsmith               sqlsmith is a random SQL query generator
+  startrek               Star Trek models episodes and quotes from the tv show
+  tpcc                   TPC-C simulates a transaction processing workload using a rich schema of multiple tables
+  tpcds                  TPC-DS is a read-only workload of "decision support" queries on large datasets.
+  tpch                   TPC-H is a read-only workload of "analytics" queries on large datasets.
+  ycsb                   YCSB is the Yahoo! Cloud Serving Benchmark
+```
+
