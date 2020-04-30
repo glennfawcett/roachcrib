@@ -326,3 +326,7 @@ Available Commands:
   ycsb                   YCSB is the Yahoo! Cloud Serving Benchmark
 ```
 
+## Java Hybernate Dialect for CockroachDB
+The Cockroach Dialect for Java / Hybernate is currently under review.  Information regarding the CockroachDB dialect for Hybernate can be found here:
+* [Documentation @CockroachDB](https://www.cockroachlabs.com/docs/stable/build-a-java-app-with-cockroachdb-hibernate.html)
+* [https://github.com/hibernate/hibernate-orm/pull/3280](https://github.com/hibernate/hibernate-orm/pull/3280)
