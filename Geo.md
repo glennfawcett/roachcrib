@@ -117,3 +117,9 @@ BEGIN;
   SELECT ...
 COMMIT;
 ```
+
+### Cockroach Demo to create sample multi-region cluster
+Testing Multi-Region from your Laptop...
+```
+cockroach demo --demo-locality=superRegion=us,region=us-central1:superRegion=us,region=us-west1:superRegion=us,region=us-west2:superRegion=us,region=us-central1:superRegion=us,region=us-west1:superRegion=us,region=us-west2 --nodes 6
+```
