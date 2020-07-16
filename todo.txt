@@ -1,0 +1,7 @@
+SET application_name = (SELECT 'a' || 'b');
+SET
+> SHOW  application_name;
+  application_name
++------------------+
+  ab
+

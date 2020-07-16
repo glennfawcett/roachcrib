@@ -330,3 +330,26 @@ Available Commands:
 The Cockroach Dialect for Java / Hybernate is currently under review.  Information regarding the CockroachDB dialect for Hybernate can be found here:
 * [Documentation @CockroachDB](https://www.cockroachlabs.com/docs/stable/build-a-java-app-with-cockroachdb-hibernate.html)
 * [https://github.com/hibernate/hibernate-orm/pull/3280](https://github.com/hibernate/hibernate-orm/pull/3280)
+
+## Export Table Data
+
+Example shows export 1000 rows from the customer table to a **tab** separated file:
+```
+root@:26257/tpcc> export into CSV 'nodelocal://1/custsamp' WITH delimiter = e'\t' from select * from customer limit 1000;
+  filename | rows | bytes
+-----------+------+---------
+  n3.0.csv | 1000 | 578191
+
+15:38 $ pwd
+/Users/glenn/local/1/data/extern/custsamp
+✔ ~/local/1/data/extern/custsamp
+15:39 $ ls -ltrh
+total 1136
+-rw-------  1 glenn  staff   565K Jul 16 15:36 n3.0.csv
+
+15:39 $ cat n3.0.csv |wc -l
+    1000
+
+15:40 $ head -1 n3.0.csv
+1	1	0	y3v1U5yraPxxELo	OE	BARBARBAR	mssaF9m9cdLXe	lAgrnp8ueWN	ZrKB2O3Hzk13xW	OZ	077611111	5580696790858719	2006-01-02 15:04:05+00:00	GC	50000.00	0.4714	-10.00	10.00	1	0	haRF4E9zNHsJ7ZvyiJ3n2X1f4fJoMgn5buTDyUmQupcYMoPylHqYo89SqHqQ4HFVNpmnIWHyIowzQN2r4uSQJ8PYVLLLZk9Epp6cNEnaVrN3JXcrBCOuRRSlC0zvh9lctkhRvAvE5H6TtiDNPEJrcjAUOegvQ1Ol7SuF7jPf275wNDlEbdC58hrunlPfhoY1dORoIgb0VnxqkqbEWTXujHUOvCRfqCdVyc8gRGMfAd4nWB1rXYANQ0fa6ZQJJI2uTeFFazaVwxnN13XunKGV6AwCKxhJQVgXWaljKLJ7r175FAuGY
+```
