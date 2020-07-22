@@ -353,3 +353,25 @@ total 1136
 15:40 $ head -1 n3.0.csv
 1	1	0	y3v1U5yraPxxELo	OE	BARBARBAR	mssaF9m9cdLXe	lAgrnp8ueWN	ZrKB2O3Hzk13xW	OZ	077611111	5580696790858719	2006-01-02 15:04:05+00:00	GC	50000.00	0.4714	-10.00	10.00	1	0	haRF4E9zNHsJ7ZvyiJ3n2X1f4fJoMgn5buTDyUmQupcYMoPylHqYo89SqHqQ4HFVNpmnIWHyIowzQN2r4uSQJ8PYVLLLZk9Epp6cNEnaVrN3JXcrBCOuRRSlC0zvh9lctkhRvAvE5H6TtiDNPEJrcjAUOegvQ1Ol7SuF7jPf275wNDlEbdC58hrunlPfhoY1dORoIgb0VnxqkqbEWTXujHUOvCRfqCdVyc8gRGMfAd4nWB1rXYANQ0fa6ZQJJI2uTeFFazaVwxnN13XunKGV6AwCKxhJQVgXWaljKLJ7r175FAuGY
 ```
+
+## Show grants from ALL databases
+```
+set sql_safe_updates=false;
+set database to "";
+show grants;
+
+select distinct grantee, database_name from [show grants] order by 1 ;
+
+select distinct grantee, database_name, privilege_type from [show grants] where grantee not in ('admin','root','public') order by 1;
+
+    grantee   | database_name | privilege_type
+--------------+---------------+-----------------
+  admin2      | defaultdb     | ALL
+  glennf      | bank          | ALL
+  jpatutorial | springbootjpa | ALL
+  maxroach    | bank          | ALL
+  myuser      | customers     | ALL
+  postgres    | defaultdb     | ALL
+(6 rows)
+
+```
