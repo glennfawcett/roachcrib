@@ -54,6 +54,9 @@ SET session vectorize='auto';
 SET session vectorize='experimental_on';
 SET session vectorize='off';
 
+-- Vectorize ON for Cluster
+SET CLUSTER SETTING sql.defaults.vectorize=on
+
 ```
 
 ## Tracing 
