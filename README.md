@@ -378,3 +378,9 @@ select distinct grantee, database_name, privilege_type from [show grants] where 
 (6 rows)
 
 ```
+
+### Session Level Application Setting 
+Using this session level setting you can filter from within the statements page based on the application name.  A power tool to find the queries and compute the amount of work performed by each application.
+ 
+`SET application_name = 'TAG YOUR APPLICATION'`
+
