@@ -379,8 +379,29 @@ select distinct grantee, database_name, privilege_type from [show grants] where 
 
 ```
 
-### Session Level Application Setting 
+## Session Level Application Setting 
 Using this session level setting you can filter from within the statements page based on the application name.  A power tool to find the queries and compute the amount of work performed by each application.
  
 `SET application_name = 'TAG YOUR APPLICATION'`
 
+
+## Modify FK Constraints for UPDATE CASCADE
+
+This example uses the `movr` DDL which is a workload included in the cockroach binary "`cockroach workload init movr`".
+
+```sql
+ALTER TABLE rides
+DROP CONSTRAINT fk_city_ref_users,
+ ADD CONSTRAINT fk_city_ref_users_cascasde FOREIGN KEY (city, rider_id) REFERENCES users(city, id)
+              ON UPDATE CASCADE;
+
+ALTER TABLE rides
+DROP CONSTRAINT fk_vehicle_city_ref_vehicles,
+ ADD CONSTRAINT fk_vehicle_city_ref_vehicles_cascade FOREIGN KEY (vehicle_city, vehicle_id) REFERENCES vehicles(city, id)
+              ON UPDATE CASCADE;
+
+ALTER TABLE vehicle_location_histories
+DROP CONSTRAINT fk_city_ref_rides,
+ ADD CONSTRAINT fk_city_ref_rides_cascade FOREIGN KEY (city, ride_id) REFERENCES rides(city, id)
+              ON UPDATE CASCADE;
+```
