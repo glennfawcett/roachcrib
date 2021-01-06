@@ -5,3 +5,16 @@ SET
 +------------------+
   ab
 
+--## Cancel diag collection
+--##
+cockroach statement-diag cancel -all
+
+--## Sample workload from node_statement_statistics
+--##
+cockroach node status --format tsv --insecure | tail -n +2 | while read id host other; do echo $id $host; cockroach sql --format tsv --url postgres://root@$host?sslmode=disable -e "select * from crdb_internal.node_statement_statistics;"; done >> node_statement_statistics.tsv
+
+
+(`id_merchant_id`,`id_availability`,`id_epoch`,`id_item_id`), 
+(`id_merchant_id`,`id_epoch`,`id_availability`,`id_category_0`,`id_category_1`,`id_category_2`,`id_category_3`),
+(`id_merchant_id`,`id_epoch`,`id_availability`,`id_product_type_0`,`id_product_type_1`,`id_product_type_2`,`id_product_type_3`)
+(`id_merchant_id`,`id_epoch`,`id_availability`,`id_custom_label_0`)

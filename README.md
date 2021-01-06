@@ -405,3 +405,18 @@ DROP CONSTRAINT fk_city_ref_rides,
  ADD CONSTRAINT fk_city_ref_rides_cascade FOREIGN KEY (city, ride_id) REFERENCES rides(city, id)
               ON UPDATE CASCADE;
 ```
+
+## How many vCPUs are in the cluster?
+
+```sql
+SELECT 
+((SELECT value FROM crdb_internal.node_metrics WHERE name = 'sys.cpu.user.percent')
++
+(SELECT value FROM crdb_internal.node_metrics WHERE name = 'sys.cpu.sys.percent'))
+*
+(SELECT value FROM crdb_internal.node_metrics WHERE name = 'liveness.livenodes')
+/
+(SELECT value FROM crdb_internal.node_metrics WHERE name = 'sys.cpu.combined.percent-normalized')
+AS cluster_vcpus
+;
+```
