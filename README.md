@@ -420,3 +420,11 @@ SELECT
 AS cluster_vcpus
 ;
 ```
+
+## MASSIVE Truncate / Delete
+Massive truncate/delete operations can cause pressure on GC operations.  
+To address the following is helpful:
+* Lower `gc.ttlseconds` on the object to be truncated
+* Decrease retention period by splitting DDL into multiple objects
+* Slow range operations
+* * Decrease `kv.snapshot_rebalance.max_rate`... `8.0 MiB` -> `1.0 MiB` 
