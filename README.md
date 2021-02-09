@@ -428,3 +428,8 @@ To address the following is helpful:
 * Decrease retention period by splitting DDL into multiple objects
 * Slow range operations
 * * Decrease `kv.snapshot_rebalance.max_rate`... `8.0 MiB` -> `1.0 MiB` 
+
+## JAVA tips!!
+* `setReWriteBatchedInserts=true` for in JDBC connection string
+* [Getting Started Docs](https://www.cockroachlabs.com/docs/stable/build-a-java-app-with-cockroachdb.html)
+https://www.cockroachlabs.com/docs/stable/build-a-java-app-with-cockroachdb.html
