@@ -433,3 +433,15 @@ To address the following is helpful:
 * `setReWriteBatchedInserts=true` for in JDBC connection string
 * [Getting Started Docs](https://www.cockroachlabs.com/docs/stable/build-a-java-app-with-cockroachdb.html)
 https://www.cockroachlabs.com/docs/stable/build-a-java-app-with-cockroachdb.html
+
+## COMMIT Timestamp Embedded in hidden column :: `crdb_internal_mvcc_timestamp`
+```
+root@:26257/defaultdb> select *, crdb_internal_mvcc_timestamp from a;
+  id |  b1  |  b2  |  crdb_internal_mvcc_timestamp
+-----+------+------+---------------------------------
+   1 | NULL | NULL | 1610313263319124000.0000000000
+   2 |    2 | NULL | 1610313263319124000.0000000000
+   3 | NULL |    3 | 1610313263319124000.0000000000
+   4 |    4 |    4 | 1610313263319124000.0000000000
+(4 rows)
+```
