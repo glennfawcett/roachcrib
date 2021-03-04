@@ -445,3 +445,14 @@ root@:26257/defaultdb> select *, crdb_internal_mvcc_timestamp from a;
    4 |    4 |    4 | 1610313263319124000.0000000000
 (4 rows)
 ```
+
+## SQL TOP sessions
+Count the number of top sessions running transactions with the same profile:
+
+```sql
+select substring(active_queries for 40) as SQL_snipit, 
+       count(*) 
+from [show sessions] 
+group by 1
+order by 2 desc;
+```
