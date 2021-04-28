@@ -456,3 +456,13 @@ from [show sessions]
 group by 1
 order by 2 desc;
 ```
+
+## NODE_ID from SQL
+```sql
+-- get node_id
+--
+SELECT (((unique_rowid()::bit(64))<<(64-15))>>(64-15))::INT;
+  int8
+--------
+     4
+```
