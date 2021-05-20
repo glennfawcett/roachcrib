@@ -466,3 +466,27 @@ SELECT (((unique_rowid()::bit(64))<<(64-15))>>(64-15))::INT;
 --------
      4
 ```
+
+## DELETE with LIMIT
+If you have millions of rows to delete, it is not a good idea to 
+run this as one statement in CockroachDB.  It is best to run
+`DELETE` in a loop until the critera is deleting ZERO rows.
+This can be done with the `cockroach` binary using the `--watch`
+clause to repeat the statement.  When wrapped around a simple 
+bash shell, it is pretty easy to do this on the fly.
+
+```bash
+cockroach sql --insecure --format csv --execute """
+  DELETE FROM mybigtable
+  WHERE my_timestamp < '_some_time_value'
+  LIMIT 100
+""" --watch 0.0001s |
+while read d
+do
+  echo $d
+  if [[ "$d" == "DELETE 0" ]]; then
+     echo "DONE"
+     exit
+  fi
+done
+```
