@@ -496,11 +496,18 @@ Every row has a hidden column, `crdb_internal_mvcc_timestamp`, which is epoch na
 used as a transaction timestamp.  This can be converted to TIMESTAMP like so:
 
 ```sql
+SELECT * FROM t;
+
+  a |  ts
+----+-------
+  1 | NULL
+
 SELECT 
-  experimental_strptime((crdb_internal_mvcc_timestamp/10^9)::string, '%s')::timestamp 
+  experimental_strptime((crdb_internal_mvcc_timestamp/10^9)::string, '%s')::timestamp, *
 FROM t;
 
-  experimental_strptime
--------------------------
-  2021-06-16 18:10:28
+  experimental_strptime | a |  ts
+------------------------+---+-------
+  2021-06-16 19:05:58   | 1 | NULL
+
 ```
