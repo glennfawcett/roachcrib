@@ -490,3 +490,13 @@ do
   fi
 done
 ```
+
+## EPOCH to TIMESTAMP conversion
+Every row has a hidden column, `crdb_internal_mvcc_timestamp`, which is epoch nanoseconds 
+used as a transaction timestamp.  This can be converted to TIMESTAMP like so:
+```
+root@:26257/defaultdb> select experimental_strptime((crdb_internal_mvcc_timestamp/10^9)::string, '%s')::timestamp from t;
+  experimental_strptime
+-------------------------
+  2021-06-16 18:10:28
+```
