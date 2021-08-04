@@ -511,3 +511,17 @@ FROM t;
   2021-06-16 19:05:58   | 1 | NULL
 
 ```
+
+## Orphan Ranges without Leases
+These ranges will be cleaned up after GC, but end up hanging out as Orphans until that time.
+
+```sql
+root@:26257/defaultdb> SELECT *
+  FROM crdb_internal.ranges_no_leases,
+       (SELECT descriptor_id, index_id FROM crdb_internal.table_indexes WHERE descriptor_name like '%') AS ids
+ WHERE start_pretty LIKE '/Table/' || descriptor_id || '/' || index_id || '%';
+  range_id | start_key | start_pretty | end_key | end_pretty | table_id | database_name | schema_name | table_name |  index_name  | replicas |                                                 replica_localities                                                  | voting_replicas | non_voting_replicas | learner_replicas |   split_enforced_until    | descriptor_id | index_id
+-----------+-----------+--------------+---------+------------+----------+---------------+-------------+------------+--------------+----------+---------------------------------------------------------------------------------------------------------------------+-----------------+---------------------+------------------+---------------------------+---------------+-----------
+       225 | \361\212  | /Table/105/2 | \362    | /Table/106 |      105 | defaultdb     |             | jsontable  | in_jsontable | {1,2,3}  | {"cloud=local,region=local,zone=local","cloud=local,region=local,zone=local","cloud=local,region=local,zone=local"} | {1,3,2}         | {}                  | {}               | 2021-07-23 01:43:26.42477 |           105 |        2
+(1 row)
+```
