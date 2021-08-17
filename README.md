@@ -525,3 +525,11 @@ root@:26257/defaultdb> SELECT *
        225 | \361\212  | /Table/105/2 | \362    | /Table/106 |      105 | defaultdb     |             | jsontable  | in_jsontable | {1,2,3}  | {"cloud=local,region=local,zone=local","cloud=local,region=local,zone=local","cloud=local,region=local,zone=local"} | {1,3,2}         | {}                  | {}               | 2021-07-23 01:43:26.42477 |           105 |        2
 (1 row)
 ```
+
+## Statement Timeout 
+To prevent runway queries, the `statement_timeout` session variable should be set.
+The following example will timeout in 30 seconds:
+
+```sql
+set statement_timeout='30s'
+```
