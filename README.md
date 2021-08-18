@@ -533,3 +533,11 @@ The following example will timeout in 30 seconds:
 ```sql
 set statement_timeout='30s'
 ```
+
+## Trace all Sessions
+How to turn in tracing for all sessions.  Output will be werittern to log
+directories. 
+
+```sql
+SET CLUSTER SETTING sql.trace.txn.enable_threshold = '1s';
+```
