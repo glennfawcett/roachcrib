@@ -1,14 +1,26 @@
 # Tracing CRDB with Golang tools
 
-Pulling PPROF with CRDB and displaying
+
+## Pulling PPROF
+
+This is done via the restful interface.  Gather these endpoints
+with `curl` and redirect to a file(s).
+
+* `https://127.0.0.1:8080/debug/pprof/profile?seconds=15`
+* `https://127.0.0.1:8080/debug/pprof/heap?seconds=15`
+* `https://127.0.0.1:8080/debug/pprof/goroutine?debug=2`
+
+
+## Displaying PPROF 
+
 * `go tool pprof -tags <profile>`
 * `go tool pprof -web <profile>`
 
 
-## pprof -tags examples
+### pprof -tags examples
 
 
-### Single pprof file
+#### Single pprof file
 
 ```bash
 $ go tool pprof -tags ./cpu.pprof
@@ -34,7 +46,7 @@ $ go tool pprof -tags ./cpu.pprof
 
 ```
 
-### ALL files together
+#### pprof tags ALL files together
 
 Find ALL cpu.pprof files and show the distribution of CPU usage.  This example takes data
 from multipe nodes in a cluster.
@@ -79,7 +91,7 @@ find . -name cpu.pprof -print0 | xargs -0 go tool pprof -tags
            140.0ms ( 1.77%): INSERT
 ```
 
-## pprof with visual WEB 
+### pprof with visual WEB 
 
 This brings up a browser to view on on various details in a flow diagram.
 
