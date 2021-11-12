@@ -541,3 +541,20 @@ directories. Details are in the [code](https://github.com/cockroachdb/cockroach/
 ```sql
 SET CLUSTER SETTING sql.trace.txn.enable_threshold = '1s';
 ```
+
+## Monitor Contention by Object SQL
+```sql
+WITH c AS (
+			SELECT DISTINCT ON (table_id, index_id)
+			       table_id,
+			       index_id,
+			       num_contention_events AS events,
+			       cumulative_contention_time AS time
+			  FROM crdb_internal.cluster_contention_events
+         )
+SELECT i.descriptor_name, i.index_name, c.events, c.time
+  FROM crdb_internal.table_indexes AS i
+  JOIN c ON i.descriptor_id = c.table_id
+        AND i.index_id = c.index_id
+ORDER BY c.time DESC LIMIT 10;
+```
