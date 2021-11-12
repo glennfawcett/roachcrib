@@ -542,6 +542,13 @@ directories. Details are in the [code](https://github.com/cockroachdb/cockroach/
 SET CLUSTER SETTING sql.trace.txn.enable_threshold = '1s';
 ```
 
+## Fully qualified connect strings and Environment Variables for jump server
+
+```bash
+export COCKROACH_URL=postgresql://root@localhost:26257/
+export COCKROACH_CERTS_DIR=/home/ubuntu/certs
+export connStr="postgresql://root@localhost:26257/defaultdb?sslmode=require&sslrootcert=/home/ubuntu/certs/ca.crt&sslcert=/home/ubuntu/certs/client.root.crt&sslkey=/home/ubuntu/certs/client.root.key"
+```
 ## Monitor Contention by Object SQL
 ```sql
 WITH c AS (
