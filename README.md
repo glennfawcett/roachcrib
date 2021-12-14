@@ -565,3 +565,23 @@ SELECT i.descriptor_name, i.index_name, c.events, c.time
         AND i.index_id = c.index_id
 ORDER BY c.time DESC LIMIT 10;
 ```
+
+## Index Usage Query
+
+This functionality is evolving and will eventually be in the DB console.
+
+```sql
+SELECT ti.descriptor_name AS table_name, ti.index_name, total_reads, last_read 
+FROM crdb_internal.index_usage_statistics AS us 
+JOIN crdb_internal.table_indexes ti ON us.index_id = ti.index_id AND us.table_id = ti.descriptor_id 
+ORDER BY total_reads ASC;
+
+-- Sample Output
+--
+
+   table_name   | index_name | total_reads |           last_read
+----------------+------------+-------------+--------------------------------
+  scandirection | primary    |           9 | 2021-12-14 17:37:41.023539+00
+  scandirection | idx_rev    |       94903 | 2021-12-14 17:38:38.310606+00
+  scandirection | idx_fw     |      111213 | 2021-12-13 18:33:28.003372+00
+```
