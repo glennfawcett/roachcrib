@@ -458,6 +458,9 @@ order by 2 desc;
 ```
 
 ## NODE_ID from SQL
+
+The shifting of bits uses the method baked into CRDB for creating `unique_rowid()`.  A coleague then pointed out there is a `node_id()` function that can be used as well.
+
 ```sql
 -- get node_id
 --
@@ -465,6 +468,11 @@ SELECT (((unique_rowid()::bit(64))<<(64-15))>>(64-15))::INT;
   int8
 --------
      4
+     
+SELECT crdb_internal.node_id();
+  crdb_internal.node_id
+-------------------------
+                      4
 ```
 
 ## DELETE with LIMIT
