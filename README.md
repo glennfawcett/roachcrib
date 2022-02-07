@@ -582,14 +582,28 @@ This functionality is evolving and will eventually be in the DB console.
 SELECT ti.descriptor_name AS table_name, ti.index_name, total_reads, last_read 
 FROM crdb_internal.index_usage_statistics AS us 
 JOIN crdb_internal.table_indexes ti ON us.index_id = ti.index_id AND us.table_id = ti.descriptor_id 
-ORDER BY total_reads ASC;
+ORDER BY total_reads DESC LIMIT 10;
 
 -- Sample Output
 --
 
    table_name   | index_name | total_reads |           last_read
 ----------------+------------+-------------+--------------------------------
-  scandirection | primary    |           9 | 2021-12-14 17:37:41.023539+00
-  scandirection | idx_rev    |       94903 | 2021-12-14 17:38:38.310606+00
   scandirection | idx_fw     |      111213 | 2021-12-13 18:33:28.003372+00
+  scandirection | idx_rev    |       94903 | 2021-12-14 17:38:38.310606+00
+  scandirection | primary    |           9 | 2021-12-14 17:37:41.023539+00
+```
+
+## Lock Timeout new in v21.2
+
+```sql
+> set lock_timeout = '5s';
+SET
+
+
+Time: 0ms total (execution 0ms / network 0ms)
+
+root@test-crdb.us-west-2.aws.ddnw.net:26257/tpcc> SELECT * FROM warehouse WHERE w_id = 0;
+ERROR: canceling statement due to lock timeout on row (w_id)=(0) in warehouse@primary
+SQLSTATE: 55P03
 ```
