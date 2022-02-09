@@ -607,3 +607,45 @@ root@test-crdb.us-west-2.aws.ddnw.net:26257/tpcc> SELECT * FROM warehouse WHERE 
 ERROR: canceling statement due to lock timeout on row (w_id)=(0) in warehouse@primary
 SQLSTATE: 55P03
 ```
+
+## NO FULL SCAN HINT
+
+```sql
+root@:26257/defaultdb> show create a;
+  table_name |                create_statement
+-------------+-------------------------------------------------
+  a          | CREATE TABLE public.a (
+             |     id INT8 NOT NULL DEFAULT unique_rowid(),
+             |     name STRING NULL,
+             |     CONSTRAINT "primary" PRIMARY KEY (id ASC),
+             |     FAMILY "primary" (id, name)
+             | )
+
+
+root@:26257/defaultdb> select count(*) from a;
+  count
+---------
+   2958
+
+
+root@:26257/defaultdb> explain select count(*) from a;
+                                        info
+------------------------------------------------------------------------------------
+  distribution: full
+  vectorized: true
+
+  • group (scalar)
+  │ estimated row count: 1
+  │
+  └── • scan
+        estimated row count: 2,958 (100% of the table; stats collected 2 days ago)
+        table: a@primary
+        spans: FULL SCAN
+(10 rows)
+
+
+Time: 4ms total (execution 0ms / network 4ms)
+
+root@:26257/defaultdb> explain select count(*) from a@{NO_FULL_SCAN};
+ERROR: could not produce a query plan conforming to the NO_FULL_SCAN hint
+```
