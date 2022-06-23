@@ -9,6 +9,10 @@ I seperated out the CribSheet commands specific to Geo Partitioning as it a pret
 
 * [Geo CribSheet](Geo.md)
 
+## Tracing Golang /w pprof
+
+* [tracing_golang.md](tracing_golang.md)
+
 ## Database Level Configuration 
 ```
 root@localhost:26257/kv> show zone configuration for database mydatabase;

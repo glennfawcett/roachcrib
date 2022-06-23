@@ -10,6 +10,8 @@ with `curl` and redirect to a file(s).
 * `https://127.0.0.1:8080/debug/pprof/heap?seconds=15`
 * `https://127.0.0.1:8080/debug/pprof/goroutine?debug=2`
 
+* [pprof_pull](pprof_pull_roachprod.sh) tool for roachprod/insecure clusters throught driver machine with haproxy
+
 
 ## Displaying PPROF 
 
