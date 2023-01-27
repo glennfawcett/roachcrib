@@ -1730,8 +1730,709 @@ alter table test alter column id set default unordered_unique_rowid();
 ```
 
 
-## pprof
+## pprof 
+
+### pprof tool
+
+* [pprof_pull_roachprod.sh](pprof_pull_roachprod.sh) works with unsecured clusters through haproxy
+
+### show profile
 
 ```bash
 go tool pprof -http localhost:8001 heap_n1_20220617_2031.pprof
 ```
+
+
+```sql
+select create_statement from [show create crdb_internal.index_usage_statistics];
+                   create_statement
+-------------------------------------------------------
+  CREATE TABLE crdb_internal.index_usage_statistics (
+      table_id INT8 NOT NULL,
+      index_id INT8 NOT NULL,
+      total_reads INT8 NOT NULL,
+      last_read TIMESTAMPTZ NULL
+  )
+(1 row)
+
+
+Time: 19ms total (execution 13ms / network 5ms)
+
+root@192.168.0.100:26257/defaultdb> SELECT ti.descriptor_name AS table_name, ti.index_name, total_reads, last_read
+FROM crdb_internal.index_usage_statistics AS us
+JOIN crdb_internal.table_indexes ti ON us.index_id = ti.index_id AND us.table_id = ti.descriptor_id
+ORDER BY total_reads DESC LIMIT 10;
+        table_name        |          index_name          | total_reads |           last_read
+--------------------------+------------------------------+-------------+--------------------------------
+  ingest_stress           | ingest_stress_pkey           |       15056 | 2022-07-12 20:00:08.399934+00
+  ingest_stress_tsidxhash | ingest_stress_tsidxhash_pkey |       15056 | 2022-07-12 20:00:33.907745+00
+  ingest_stress_tsidx     | ingest_stress_tsidx_pkey     |       15056 | 2022-07-12 20:00:31.197735+00
+  t2                      | t2_pkey                      |         949 | 2022-07-12 20:00:33.898864+00
+  t                       | t_pkey                       |         944 | 2022-07-12 20:00:31.191046+00
+  events_id2tspk          | primary                      |         941 | 2022-07-12 20:00:31.191364+00
+  ttl_test2               | ttl_test2_pkey               |         941 | 2022-07-12 20:00:08.393105+00
+  events_new              | primary                      |         941 | 2022-07-12 20:00:08.393054+00
+  ttl_test                | ttl_test_pkey                |         941 | 2022-07-12 20:00:08.392983+00
+  events                  | primary                      |         941 | 2022-07-12 20:00:31.191198+00
+(10 rows)
+
+
+SELECT ti.descriptor_name AS table_name, ti.index_name, total_reads, last_read
+FROM crdb_internal.index_usage_statistics AS us
+JOIN crdb_internal.table_indexes ti ON us.index_id = ti.index_id AND us.table_id = ti.descriptor_id
+ORDER BY total_reads DESC LIMIT 10;
+
+
+SELECT ti.descriptor_name AS table_name, ti.index_name, total_reads, last_read
+FROM crdb_internal.index_usage_statistics AS us
+JOIN crdb_internal.table_indexes ti ON us.index_id = ti.index_id AND us.table_id = ti.descriptor_id and table_id = 380;
+
+  table_name | index_name | total_reads |           last_read
+-------------+------------+-------------+--------------------------------
+  events     | primary    |         941 | 2022-07-12 20:00:31.191198+00
+  events     | ts_idx     |           0 | NULL
+
+CREATE TABLE multi_index_tab (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    id2 UUID DEFAULT gen_random_uuid(),
+    current_state STRING NOT NULL,
+    UNIQUE INDEX idx_id2 (id2),
+    INDEX idx_state (current_state)
+);
+
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+INSERT INTO multi_index_tab (current_state) select 'complete' from generate_series(1,10000);
+
+
+INSERT INTO multi_index_tab (current_state) select 'out_for_delivery' from generate_series(1,100);
+
+INSERT INTO multi_index_tab (current_state) select 'inprocess' from generate_series(1,1000);
+
+SELECT current_state, id2 from multi_index_tab
+WHERE
+current_state = 'out_for_delivery' AND
+id2 IN ('1b3d74ea-f9dc-48d5-949b-94253cdb6f72', '178c70dc-377d-4b93-81d2-4c958317dbe7', '02bdce90-34d7-4690-9206-f53c97e343f7', '17f31b11-9a44-4252-80df-c05a1bda2db3', '1ecf624f-6579-49d5-9010-5ddcac72559e', 'ade631f2-2773-46ca-a261-79bc794e6642', '69f47085-bd77-4e3d-b195-befaf3a09633');
+
+                                                                                                                                                                                     info
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  distribution: local
+  vectorized: true
+
+  • filter
+  │ estimated row count: 7
+  │ filter: current_state = 'out_for_delivery'
+  │
+  └── • index join
+      │ estimated row count: 7
+      │ table: multi_index_tab@multi_index_tab_pkey
+      │
+      └── • scan
+            estimated row count: 7 (<0.01% of the table; stats collected 6 minutes ago)
+            table: multi_index_tab@idx_id2
+            spans: [/'02bdce90-34d7-4690-9206-f53c97e343f7' - /'02bdce90-34d7-4690-9206-f53c97e343f7'] [/'178c70dc-377d-4b93-81d2-4c958317dbe7' - /'178c70dc-377d-4b93-81d2-4c958317dbe7'] [/'17f31b11-9a44-4252-80df-c05a1bda2db3' - /'17f31b11-9a44-4252-80df-c05a1bda2db3'] [/'1b3d74ea-f9dc-48d5-949b-94253cdb6f72' - /'1b3d74ea-f9dc-48d5-949b-94253cdb6f72'] … (3 more)
+(15 rows)
+
+CREATE INDEX idx_state_id2 on (current_state, id2);
+
+                                                                                                                            info
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  distribution: local
+  vectorized: true
+
+  • scan
+    estimated row count: 7 (<0.01% of the table; stats collected 8 minutes ago)
+    table: multi_index_tab@idx_state_id2
+    spans: [/'out_for_delivery'/'02bdce90-34d7-4690-9206-f53c97e343f7' - /'out_for_delivery'/'02bdce90-34d7-4690-9206-f53c97e343f7'] [/'out_for_delivery'/'178c70dc-377d-4b93-81d2-4c958317dbe7' - /'out_for_delivery'/'178c70dc-377d-4b93-81d2-4c958317dbe7'] [/'out_for_delivery'/'17f31b11-9a44-4252-80df-c05a1bda2db3' - /'out_for_delivery'/'17f31b11-9a44-4252-80df-c05a1bda2db3'] [/'out_for_delivery'/'1b3d74ea-f9dc-48d5-949b-94253cdb6f72' - /'out_for_delivery'/'1b3d74ea-f9dc-48d5-949b-94253cdb6f72'] … (3 more)
+(7 rows)
+
+
+((SELECT value FROM crdb_internal.node_metrics WHERE name = 'sys.cpu.user.percent')+(SELECT value FROM crdb_internal.node_metrics WHERE name = 'sys.cpu.sys.percent'))*3/(SELECT value FROM crdb_internal.node_metrics WHERE name = 'sys.cpu.combined.percent-normalized')
+AS node_vcpus
+;
+
+SELECT value FROM crdb_internal.node_metrics WHERE name = 'liveness.livenodes';
+
+
+ONE statement:
+                         Table         QPS     respP99
+----------------------------------------------------------------------
+                          semi       162.3    1.997277
+
+THREE statements in a batch:
+
+                         Table         QPS     respP99
+----------------------------------------------------------------------
+                          semi        64.2    3.686373
+
+create table maestro_tag_permit (
+    tag string primary key, 
+    permit_consumed int, 
+    max_allowed int)
+;
+insert into maestro_tag_permit 
+values ('testjob', 0, 100);
+
+
+WITH delthread as (    DELETE    FROM mytable    WHERE                     id BETWEEN '00000000-0000-0000-0000-000000000000' AND '014ad878-ec1c-4fe1-88d5-8caf2b362d23'        AND (crdb_internal_mvcc_timestamp/10^9)::int::timestamptz < '{}'::timestamptz    LIMIT 100    RETURNING (id))
+INSERT INTO delruntime (id, lastval, rowsdeleted)
+SELECT thread_number, max(id), count(*) FROM delthreadRETURNING lastval, rowsdeleted;
+
+
+WITH get_tag AS (
+    UPDATE maestro_tag_permit
+    SET permit_consumed = permit_consumed + :num 
+    WHERE tag = :tag AND permit_consumed < max_allowed
+    RETURNING (tag, max_allowed, permit_consumed)
+)
+INSERT INTO 
+ maestro_step_instance_tag_permit(workflow_id, workflow_instance_id, workflow_run_id, step_id, step_attempt_id, tag)
+SELECT ($1, $2, $3, $4, $5, tag) from get_tag;
+
+
+explain select * from events_hashts where id in (unnest(ARRAY['05dc95ca-9192-4dcd-afa4-3bfb0243f91']));
+
+with v as (
+    select unnest(ARRAY['05dc95ca-9192-4dcd-afa4-3bfb0243f91'::UUID,'05dc82bb-a9c4-425d-a980-6f11e3ec7082'::UUID]) as id
+)
+select * from events_hashts join v on (v.id = events_hashts.id);
+
+WITH
+  merchant_supplied_id_keys (k) AS (SELECT * FROM unnest($2:::STRING[]))
+SELECT
+  dd_business_id,
+  merchant_supplied_id,
+  aisle_id_l1,
+  aisle_name_l1,
+  aisle_id_l2,
+  aisle_name_l2,
+  sort_id,
+  product_group,
+  traits,
+  photo_id,
+  photo_url,
+  need_photo_backfill,
+  upc,
+  item_name,
+  is_active,
+  item_location_str,
+  price_lookup_code,
+  approximate_sold_as_quantity,
+  approximate_sold_as_unit,
+  measurement_unit,
+  measurement_factor,
+  increment,
+  unit,
+  additional_price_description,
+  scan_strategy,
+  detail,
+  auxiliary_photo_ids,
+  auxiliary_photo_urls,
+  product_metadata,
+  purchase_type,
+  created_at,
+  created_by,
+  updated_at,
+  updated_by,
+  approximate_sold_as_unit_str,
+  photo_uuid,
+  auxiliary_photo_uuids,
+  version_number_str,
+  dd_sic,
+  global_catalog_id,
+  gtin_14,
+  product_category_id,
+  brand_id,
+  nutrition_programs,
+  package_info
+FROM
+  product_item
+WHERE
+  merchant_supplied_id IN (SELECT k FROM merchant_supplied_id_keys)
+;
+
+WITH tabsize as (
+    select sum(range_size_mb)*1024^2 from [show ranges from table events_hashts]
+),
+rowcount as (
+    select estimated_row_count from [show tables] where table_name = 'events_hashts'
+)
+select (select * from tabsize) as tablesizeBYTES, (select * from rowcount) as rowcount,
+       ((select * from tabsize)/(select * from rowcount)) as rowsizeBytes;
+
+WITH tabsize as (
+    select sum(range_size_mb)*1024^2 from [show ranges from table events_hashts]
+),
+rowcount as (
+    select estimated_row_count from [show tables] where table_name = 'events_hashts'
+)
+select (select * from tabsize)*3/(1024*1024*1024) as tablesizeGB, (select * from rowcount) as rowcount,
+       ((select * from tabsize)/(select * from rowcount)) as rowsizeBytes;
+
+
+```bash
+
+https://cockroachlabs.atlassian.net/wiki/spaces/CS/pages/1960083470/CSM+Debug.zip+review+draft
+
+cat nodes.json  | jq '.nodes[] | {"node_id": .desc.node_id, "num_cpus"}';
+{
+  "node_id": 1,
+  "num_cpus": 1
+}
+{
+  "node_id": 2,
+  "num_cpus": 1
+}
+{
+  "node_id": 3,
+  "num_cpus": 1
+}
+{
+  "node_id": 4,
+  "num_cpus": 1
+}
+{
+  "node_id": 5,
+  "num_cpus": 1
+}
+
+
+curl 192.168.0.100:8080/_status/nodes | jq '.nodes[] | {"nodeId": .desc.nodeId}' |awk -F ': ' '/[1-9]/ {printf("%s\n", $2)}' 
+
+curl 192.168.0.100:8080/_status/nodes | jq '.nodes[].desc.NodeId'
+
+curl 192.168.0.100:8080/_status/nodes | grep '"nodeId":' |awk -F ': ' '{print $2}'|sed "s/,//g" |uniq
+
+
+http://127.0.0.1:8081/_status/diagnostics/local
+
+curl 192.168.0.100:8080/_status/diagnostics/1
+
+
+```sql
+       
+
+  crdb_internal.ranges | CREATE VIEW crdb_internal.ranges (
+                       |     range_id,
+                       |     start_key,
+                       |     start_pretty,
+                       |     end_key,
+                       |     end_pretty,
+                       |     table_id,
+                       |     database_name,
+                       |     schema_name,
+                       |     table_name,
+                       |     index_name,
+                       |     replicas,
+                       |     replica_localities,
+                       |     voting_replicas,
+                       |     non_voting_replicas,
+                       |     learner_replicas,
+                       |     split_enforced_until,
+                       |     lease_holder,
+                       |     range_size
+
+select table_name, sum(range_size) 
+from crdb_internal.ranges 
+where table_name = 'events_hashts'
+group by table_name;
+
+
+select lease_holder, count(*) 
+from crdb_internal.ranges 
+group by 1;
+
+  lease_holder | count
+---------------+--------
+             1 |   427
+             2 |   413
+             3 |   428
+
+select table_id, table_name, sum(range_size)/1024^3 as sizeGB
+from crdb_internal.ranges 
+group by 1,2 
+having sum(range_size) > 1024*1024*1024 
+order by 3 desc 
+limit 3;
+
+select sum(range_size)/1024^3 from crdb_internal.ranges;
+
+WITH i1 as (
+    INSERT INTO a ... 
+),
+i2 as (
+    INSERT INTO b ...
+),
+i3 as (
+    INSERT INTO c ...
+)
+SELECT a
+union all
+SELECT b
+union all
+SELECT c;
+
+
+CREATE TABLE IF NOT EXISTS measure (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT current_timestamp(),
+    updated_at TIMESTAMPTZ ON UPDATE current_timestamp(),
+    update_count INT NOT NULL DEFAULT 0 ON UPDATE 1,
+    device_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    measured_value INT NOT NULL DEFAULT 0,
+    measure_notes STRING,
+    measured_data JSONB,
+    INDEX idx_customer_id (customer_id, created_at),
+    INDEX device_id (device_id, created_at)
+);
+
+INSERT INTO measure (device_id, customer_id, measured_value, measure_notes) 
+SELECT 1,1,1,'aaaaaa';
+
+INSERT INTO measure (device_id, customer_id, measured_value, measure_notes) 
+SELECT 2,2,1,'aaaaaa' FROM generate_series(1, 10000);
+INSERT INTO measure (device_id, customer_id, measured_value, measure_notes) 
+SELECT 99,99,99,'bbbbbbbbbbb' FROM generate_series(1, 10000);
+INSERT INTO measure (device_id, customer_id, measured_value, measure_notes) 
+SELECT 424242,424242,42,'ccccccccc' FROM generate_series(1, 10000);
+
+SELECT customer_name, avg(measured_value) as avg, count(*) as cnt
+FROM customer
+JOIN measure ON (customer.id = measure.customer_id) 
+WHERE customer_name = 'Tula' and measure.created_at > current_timestamp() - INTERVAL '1h'
+GROUP BY 1;
+
+SELECT customer_name, avg(measured_value) as avg, count(*) as cnt
+FROM customer
+JOIN measure ON (customer.id = measure.customer_id) 
+WHERE customer_id = 2 
+--and measure.created_at > current_timestamp() - INTERVAL '1h'
+GROUP BY 1;
+
+SELECT customer_name, avg(measured_value) as avg, count(*) as cnt
+FROM customer
+JOIN measure ON (customer.id = measure.customer_id) 
+WHERE customer_name = 'Tula' 
+GROUP BY 1;
+
+SELECT customer_name, avg(measured_value) as avg, count(*) as cnt
+FROM customer
+JOIN measure ON (customer.id = measure.customer_id) 
+WHERE  customer_id = 1 
+GROUP BY 1;
+
+
+
+CREATE TABLE IF NOT EXISTS customer (
+    id INT PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT current_timestamp(),
+    updated_at TIMESTAMPTZ ON UPDATE current_timestamp(),
+    customer_name STRING NOT NULL,
+    customer_state STRING NOT NULL,
+    INDEX idx_name_state (customer_name, customer_state)
+);
+
+INSERT INTO customer (id, customer_name, customer_state) VALUES (1,'Tula','Oregon');
+
+CREATE TABLE IF NOT EXISTS device (
+    id INT PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT current_timestamp(),
+    updated_at TIMESTAMPTZ ON UPDATE current_timestamp(),
+    customer_id INT NOT NULL,
+    device_name STRING NOT NULL,
+    device_type STRING NOT NULL
+);
+
+SELECT * 
+FROM (
+        SELECT name, sum((crdb_internal.range_stats(start_key)->'intent_count')::int) as intent_count 
+        FROM crdb_internal.ranges_no_leases AS r 
+        JOIN crdb_internal.tables AS t ON r.table_id = t.table_id
+        GROUP BY name
+    ) 
+inline WHERE intent_count > 0;
+
+SELECT current_timestamp();
+SELECT current_timestamp() - INTERVAL '1hr';
+
+SELECT id 
+FROM measure as of system time '-10s'
+WHERE device_id = 99988 AND 
+      measure.created_at BETWEEN current_timestamp() - INTERVAL '10m' and current_timestamp();
+
+UPDATE device SET hourly_rolling_avg_count = %d--count
+WHERE id = %d--device_id
+RETURNING hourly_rolling_avg_count;
+
+SELECT count(*) FROM measure as of system time '-10s' WHERE device_id = 99988 AND measure.created_at BETWEEN current_timestamp() - INTERVAL '1hr' and current_timestamp();
+
+SELECT SUM(hourly_rolling_avg_count), count(id) 
+FROM device AS OF SYSTEM TIME '-10s'
+WHERE updated_at > now() - INTERVAL '-20s'
+      and (hourly_rolling_avg_count is not null); 
+
+SELECT COUNT(*) OVER (PARTITION BY device.id) as device_count, device.id, customer_name
+
+SELECT COUNT(*) as device_count, device.id, customer_name
+FROM customer
+JOIN device ON (device.customer_id = customer.id)
+JOIN measure ON (measure.device_id = device.id)
+WHERE customer_name = 'customer_2_NJ' AND
+      measure.created_at > now() - INTERVAL '1hr'
+GROUP BY device.id, customer_name
+ORDER BY 1 DESC
+LIMIT 5;
+
+
+CREATE TABLE t1 (
+    id int primary key,
+    c1 int,
+    c2 int
+);
+
+CREATE TABLE t2 (
+    id int primary key,
+    c1 int,
+    c2 int
+);
+
+INSERT INTO t1
+VALUES (1,1,1),(2,2,2),(3,3,3);
+
+INSERT INTO t2
+VALUES (1,1,1),(2,2,9),(3,3,NULL);
+
+-- Show Table t1
+select * from t1;
+
+  id | c1 | c2
+-----+----+-----
+   1 |  1 |  1
+   2 |  2 |  2
+   3 |  3 |  3
+
+-- Show Table t2
+select * from t2;
+
+  id | c1 |  c2
+-----+----+-------
+   1 |  1 |    1
+   2 |  2 |    9
+   3 |  3 | NULL
+
+-- Show rows that don't match c1 column
+SELECT t1.*
+FROM t1
+JOIN t2 USING (id)
+WHERE t1.c1!=t2.c1;
+
+  id | c1 | c2
+-----+----+-----
+   3 |  3 |  3
+
+-- Show rows that don't match c1 and c2 column
+SELECT t1.*
+FROM t1
+JOIN t2 USING (id)
+WHERE t1.c1!=t2.c1 or t2.c1 is null or
+      t1.c2!=t2.c2 or t2.c2 is null;
+
+  id | c1 | c2
+-----+----+-----
+   2 |  2 |  2
+   3 |  3 |  3
+
+```
+
+
+## ANAPLAN RCA
+
+ 1. Database Memory Settings  - Prevent OOM for/with concurrent high memory queries.  Lower cache to 40% with:  --cache=.40 --max-sql-memory=.10 to give ~7G more of buffer space.
+ 2. Go Garbage Collection  - Allow more concurrent high memory queries. GOGC=50 means that it will run when the heap increases 1.5x in size.
+ 3. OOM Killer  - Mitigation to make the issue less impactful if it were to occur again. Will also help if the system OOMs for any other reason. Ensure that OOMKiller is enabled for the nodes. Also ..  cgroup to set up memory limit.  SeeManaging cgroups with systemd.  Implement a procedure for alerting on hung nodes and restarting them automatically.
+
+
+## Linux Analysis
+
+```bash
+
+# OOM variables
+cat /proc/sys/vm/panic_on_oom
+  ## 0 :: Kills rogue process
+cat /proc/sys/vm/oom_kill_allocating_task
+  ## 0... kills largest memory hog
+cat /proc/sys/vm/swappiness
+  ## 60
+cat /proc/sys/vm/overcommit_memory
+  ## 0
+cat /proc/sys/vm/overcommit_ratio
+  ## 50
+
+#
+vm.panic_on_oom=0,1,2 :
+
+
+# Show top control group usage ordered by memory
+systemd-cgtop -m
+systemctl -t slice
+systemctl status
+cat /proc/`pgrep cockroach`/cgroup
+
+```
+
+The workload run at 1.5x (throughput) is complete with no OOM.  The settings for this run were:
+
+```
+
+## OS settings
+
+ubuntu@ip-10-13-12-131:~$ cat /proc/sys/vm/overcommit_memory
+0
+ubuntu@ip-10-13-12-131:~$ cat /proc/sys/vm/panic_on_oom
+0
+ubuntu@ip-10-13-12-131:~$ cat /proc/sys/vm/oom_kill_allocating_task
+0
+ubuntu@ip-10-13-12-131:~$ cat /proc/sys/vm/swappiness
+60
+ubuntu@ip-10-13-12-131:~$ cat /proc/sys/vm/overcommit_memory
+0
+ubuntu@ip-10-13-12-131:~$ cat /proc/sys/vm/overcommit_ratio
+50  
+
+cat 
+
+
+## Cockroach Settings
+--cache=40% --max-sql-memory=10%
+GOGC = 100
+
+cat /proc/`pgrep cockroach`/environ | strings
+
+```
+
+## Ananplan Run 
+
+Nov 11 -> 12th
+
+roachprod ssh lin-test-aws -- 'cat /proc/`pgrep cockroach`/environ | strings | grep GOGC'
+
+```sql
+with p as (
+    select customer_id, device_id, measured_data
+    from measure
+    limit 5000000
+)
+select customer_id, device_id, count(*) 
+from p
+group by 1,2
+order by 3 desc
+limit 10;
+
+
+
+
+explain analyze 
+with s1 as (
+    select first_name, last_name, preferred_time_zone, customer_guid
+    from r.users
+),
+s2 as (
+    select first_name, last_name, preferred_time_zone, customer_guid
+    from s1
+    order by last_name
+),
+s3 as (
+    select first_name, last_name, preferred_time_zone, customer_guid
+    from s2
+    order by first_name
+),
+s4 as (
+    select first_name, last_name, preferred_time_zone, customer_guid
+    from s3
+    order by customer_guid
+)
+select preferred_time_zone, count(*) 
+from s4 
+group by 1
+;
+
+explain analyze
+select preferred_time_zone, count(*) 
+from r.users, (select generate_series(1,10)) 
+group by 1;
+
+roachprod create `whoami`-red9 --clouds aws --nodes 1 --aws-machine-type-ssd m6i.large --aws-image-ami ami-08d616b7fbe4bb9d0
+ 
+roachprod create `whoami`-red86 --clouds aws --nodes 1 --aws-machine-type-ssd m6i.large --aws-image-ami ami-092b43193629811af
+```
+
+## Docker setup
+
+```bash
+
+sudo docker run -d \
+--name=homeroach \
+--hostname=fawcett-ubuntu.local \
+-p 26257:26257 -p 8080:8080  \
+cockroachdb/cockroach:v22.2.2 start-single-node \
+--insecure
+```
+
+```sql
+CREATE TABLE events (
+    event_id INT,
+    event_status STRING DEFAULT 'new',
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (event_id)
+);
+
+INSERT INTO events (event_id) VALUES (99);
+
+UPDATE events SET event_status = 'running', updated_at = now();
+UPDATE events SET event_status = 'done', updated_at = now();
+
+CREATE TABLE events (
+    event_id INT,
+    event_status STRING DEFAULT 'new',
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (event_id ASC, updated_at ASC)
+) WITH (ttl_expire_after = '5 days');
+
+INSERT INTO events (event_id) VALUES (99);
+INSERT INTO events (event_id, event_status) VALUES (99, 'running');
+INSERT INTO events (event_id, event_status) VALUES (99, 'done');
+
+SELECT * from events WHERE event_id = 99 ORDER BY updated_at DESC LIMIT 1;
+
+```
+
+```sql
+create table bigbird(id string primary key, flock_name STRING DEFAULT 'ZZZZZ');
+insert into bigbird(id) select generate_series(1000000000,1000010000);
+
+explain analyze
+select * from bigbird
+where id in ('1000000001','1000000002','1000000003','1000000004','1000000005','1000000006','1000000007','1000000008','1000000009','1000000010');
+
+explain analyze
+with invals (k) as (
+    SELECT * FROM unnest(array['1000000001','1000000002','1000000003','1000000004','1000000005','1000000006','1000000007','1000000008','1000000009','1000000010'])
+)
+select * from bigbird
+where id in (SELECT k FROM invals);
+
+explain analyze
+with invals (k) as (
+    SELECT * FROM unnest('{1,2,3,4,5,6,7,8,9,10}':::INT[])
+)
+select * from bigbird
+where id in (SELECT k::INT FROM invals);
+
