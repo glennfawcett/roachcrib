@@ -653,3 +653,47 @@ Time: 4ms total (execution 0ms / network 4ms)
 root@:26257/defaultdb> explain select count(*) from a@{NO_FULL_SCAN};
 ERROR: could not produce a query plan conforming to the NO_FULL_SCAN hint
 ```
+
+
+## Show Dirty Rows per Table... (yet to be GCed)
+
+```sql
+select
+        crdb_internal.pb_to_json('cockroach.sql.sqlbase.Descriptor', d.descriptor)->'database'->>'name' as db_name,
+        crdb_internal.pb_to_json('cockroach.sql.sqlbase.Descriptor', t.descriptor)->'table'->>'name' as table_name,
+        ranges.table_id,
+        ranges.range_id,
+        crdb_internal.range_stats(ranges.start_key)->>'key_bytes' as key_bytes,
+        crdb_internal.range_stats(ranges.start_key)->>'val_bytes' as val_bytes,
+        crdb_internal.range_stats(ranges.start_key)->>'live_bytes' as live_bytes,
+        (crdb_internal.range_stats(ranges.start_key)->>'key_bytes')::int
+                + (crdb_internal.range_stats(ranges.start_key)->>'val_bytes')::int
+                - (crdb_internal.range_stats(ranges.start_key)->>'live_bytes')::int as garbage_bytes,
+        round (100 - (crdb_internal.range_stats(ranges.start_key)->>'live_bytes')::int * 100 / 
+                ((crdb_internal.range_stats(ranges.start_key)->>'key_bytes')::int +
+                (crdb_internal.range_stats(ranges.start_key)->>'val_bytes')::int), 2) as garbage_percentage
+from
+        crdb_internal.ranges_no_leases ranges
+        join system.descriptor as t on table_id = t.id
+        join system.descriptor as d on (crdb_internal.pb_to_json('cockroach.sql.sqlbase.Descriptor', t.descriptor)->'table'->>'parentId')::int = d.id
+where
+        ((crdb_internal.range_stats(start_key)->>'key_bytes')::int + (crdb_internal.range_stats(start_key)->>'val_bytes')::int) != 0
+order by garbage_percentage desc;
+```
+
+```
+   db_name  |           table_name            | table_id | range_id | key_bytes | val_bytes | live_bytes | garbage_bytes | garbage_percentage
+------------+---------------------------------+----------+----------+-----------+-----------+------------+---------------+---------------------
+  system    | sqlliveness                     |       39 |       40 | 3252211   | 5690454   | 505        |       8942160 |              99.99
+  system    | reports_meta                    |       28 |       29 | 93399     | 123440    | 99         |        216740 |              99.95
+  system    | lease                           |       11 |       12 | 29038080  | 3427235   | 22534      |      32442781 |              99.93
+  system    | scheduled_jobs                  |       37 |       38 | 3766      | 5762      | 618        |          8910 |              93.51
+  system    | replication_critical_localities |       26 |       27 | 5560      | 4188      | 838        |          8910 |              91.40
+  defaultdb | usertable                       |      130 |     2096 | 8483169   | 35963068  | 18609650   |      25836587 |              58.13
+  defaultdb | usertable                       |      130 |     1988 | 7207260   | 30547725  | 15812544   |      21942441 |              58.12
+  defaultdb | usertable                       |      130 |     1942 | 36908861  | 156371017 | 81012380   |     112267498 |              58.09
+  defaultdb | usertable                       |      130 |     1447 | 11233968  | 47600245  | 24656338   |      34177875 |              58.09
+  defaultdb | usertable                       |      130 |     1971 | 30190046  | 127861713 | 66276154   |      91775605 |              58.07
+  defaultdb | usertable                       |      130 |     2122 | 42309323  | 179151521 | 92898796   |     128562048 |              58.05
+  defaultdb | usertable                       |      130 |     2136 | 28662201  | 121370939 | 62940037   |      87093103 |              58.05
+  ```
