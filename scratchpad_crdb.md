@@ -2435,4 +2435,8 @@ with invals (k) as (
 )
 select * from bigbird
 where id in (SELECT k::INT FROM invals);
+```
 
+```bash
+~/go/bin/rodan -load -insertThreads 150 -updateThreads 100 -selectThreads 100 -maxJsonValues 10 -maxInClause 10  -thinkTime '5ms' -customerCount 1000 -targetInsertQPS 800 -targetDeviceUpdateQPS 100 -targetSelectQPS 1500 -conn ${conn} 
+```

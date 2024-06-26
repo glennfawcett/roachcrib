@@ -697,3 +697,14 @@ order by garbage_percentage desc;
   defaultdb | usertable                       |      130 |     2122 | 42309323  | 179151521 | 92898796   |     128562048 |              58.05
   defaultdb | usertable                       |      130 |     2136 | 28662201  | 121370939 | 62940037   |      87093103 |              58.05
   ```
+
+## Show size of tables in a Database
+
+```sql
+SELECT t.relname as table_name, sum(range_size_mb)::DECIMAL(8,4) as size_MB
+FROM [show ranges with tables, details] as r
+JOIN pg_catalog.pg_class as t ON (r.table_id = t.oid)
+GROUP BY 1
+ORDER BY 2 DESC;
+```
+
