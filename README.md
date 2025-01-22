@@ -708,3 +708,10 @@ GROUP BY 1
 ORDER BY 2 DESC;
 ```
 
+## Compaction increase for MVCC
+
+Default is TOO low for compactions, just two vCPUs per node.
+
+```bash
+export COCKROACH_CONCURRENT_COMPACTIONS=$(printf "%.0f" $(echo "$(nproc) * 0.5" | bc))
+```
