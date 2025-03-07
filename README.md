@@ -715,3 +715,29 @@ Default is TOO low for compactions, just two vCPUs per node.
 ```bash
 export COCKROACH_CONCURRENT_COMPACTIONS=$(printf "%.0f" $(echo "$(nproc) * 0.5" | bc))
 ```
+
+## TTL to do onetime bulk delete
+
+CockroachDB allows you to use [Row-Level TTL](https://www.cockroachlabs.com/docs/stable/row-level-ttl) to be able to delete old data on a schedule.  It also allows you to create an express using the [ttl_expiration_expression](https://www.cockroachlabs.com/docs/stable/row-level-ttl#using-ttl_expiration_expression) parameter to include other criteria other than the _date_.  This functionality has been used to do *onetime* deletion of incorrect data.  The following statement configures `mytable` to delete some erroneous data based on `user_id` and `type`.  
+
+```sql
+ALTER TABLE mytable SET (
+    ttl_expiration_expression = '
+        CASE
+            WHEN (user_id = 0 AND type IN (
+                ''AB'', 
+                ''BC'', 
+                ''CD'', 
+                ''DE'', 
+                ''EF'', 
+                ''FG'', 
+                ''GH'' 
+            )) 
+            THEN (now()-interval ''1y'') ELSE (now()+interval ''1y'')
+         END
+    ', 
+    ttl_job_cron='45 17 7 3 FRI', ttl_delete_rate_limit=200
+);
+```
+
+It is configured to run one time really to acomplish this task, but should be removed after using `ALTER TABLE mytable RESET (ttl)`.
