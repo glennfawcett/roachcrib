@@ -741,3 +741,9 @@ ALTER TABLE mytable SET (
 ```
 
 It is configured to run one time really to acomplish this task, but should be removed after using `ALTER TABLE mytable RESET (ttl)`.
+
+## Optimizer Options
+
+**V24.3 ->**
++ `SET optimizer_prefer_bounded_cardinality = true;` 
++ `SET optimizer_min_row_count = 1.0;`
