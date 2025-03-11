@@ -747,3 +747,10 @@ It is configured to run one time really to acomplish this task, but should be re
 **V24.3 ->**
 + `SET optimizer_prefer_bounded_cardinality = true;` 
 + `SET optimizer_min_row_count = 1.0;`
+
+**New Settings SET at ROLE level...**
+```sql
+ALTER ROLE myrole SET optimizer_prefer_bounded_cardinality = on;
+ALTER ROLE myrole SET optimizer_min_row_count = 1.0;
+ALTER ROLE myrole RESET optimizer_use_histograms;
+```
